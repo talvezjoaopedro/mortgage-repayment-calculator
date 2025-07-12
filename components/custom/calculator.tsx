@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { toast } from "sonner"
 import { motion } from "motion/react"
 import { useState } from "react"
+import { watch } from "fs"
 
 const formSchema = z.object({
   amount: z.coerce
@@ -122,7 +123,7 @@ export function Calculator() {
             name="type"
             render={({ field }) => (
               <FormItem className="space-y-3">
-                <FormLabel>Notify me about...</FormLabel>
+                <FormLabel>Type</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
@@ -158,7 +159,7 @@ export function Calculator() {
             onAnimationComplete={() => setShouldShake(false)}
           >
             <Button key="SubmitButton" type="submit" className="w-full">
-              Calculate repayments
+              {"Calculate " + (form.watch("type") == "repayment" ? "repayments" : "interest")}
             </Button>
           </motion.div>
         </form>
