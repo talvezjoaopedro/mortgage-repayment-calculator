@@ -2,12 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { boolean, z } from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Toast } from "sonner"
+import { toast } from "sonner"
+import { motion } from "motion/react"
+import { useState } from "react"
 
 const formSchema = z.object({
   amount: z.coerce
@@ -41,6 +43,7 @@ const formSchema = z.object({
 })
 
 export function Calculator() {
+  const [shouldShake, setShouldShake] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,20 +53,29 @@ export function Calculator() {
       rate: 0,
       type: "repayment",
     },
-  })
+  });
 
+  const { reset, handleSubmit } = form;
+  
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
+    console.log(values);
+    toast("Mortgage calculated successfully.");
+  }
+
+  function onError() {
+    setShouldShake(true);
+    console.log("error");
   }
 
   return (
     <>
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl">Mortgage calculator</h1>
-        <Button variant={"ghost"}>Clear all</Button>
-      </div>
+      
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
+          <div className="flex items-center justify-between mb-5">
+            <h1 className="text-xl">Mortgage calculator</h1>
+            <Button key="ClearButton" type="button" variant={"ghost"} onClick={() => reset()}>Clear all</Button>
+          </div>
           <FormField
             control={form.control}
             name="amount"
@@ -140,9 +152,15 @@ export function Calculator() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full">
-            Calculate repayments
-          </Button>
+          <motion.div
+            animate={shouldShake ? { x: [-5, 5, -5, 5, 0] } : {}}
+            transition={{ duration: 0.2 }}
+            onAnimationComplete={() => setShouldShake(false)}
+          >
+            <Button key="SubmitButton" type="submit" className="w-full">
+              Calculate repayments
+            </Button>
+          </motion.div>
         </form>
       </Form>
     </>

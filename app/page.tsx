@@ -1,5 +1,6 @@
 import { Calculator } from "@/components/custom/calculator";
 import { Button } from "@/components/ui/button";
+import { Toaster } from "sonner";
 
 export default function Home() {
   return (
@@ -9,9 +10,10 @@ export default function Home() {
           <Calculator></Calculator>
         </div>
         <div className="bg-neutral-950 border border-neutral-800 p-10 rounded-lg">
-          <Button variant={"outline"}>Olá como estás?</Button>
+          {/* <Button variant={"outline"}>Olá como estás?</Button> */}
         </div>
       </div>
+      <Toaster closeButton theme="dark"/>
     </div>
   );
 }
