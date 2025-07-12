@@ -126,7 +126,7 @@ export function Calculator() {
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     className="flex flex-col"
                   >
                     
