@@ -2,15 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { boolean, z } from "zod"
+import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { toast } from "sonner"
 import { motion } from "motion/react"
 import { useState } from "react"
-import { watch } from "fs"
 
 const formSchema = z.object({
   amount: z.coerce
@@ -37,21 +35,28 @@ const formSchema = z.object({
     .min(1, {
       message: "Age must be at least 1%.",
     }),
+  initial: z.coerce
+    .number()
+    .nonnegative()
+    .min(1, {
+      message: "Must be at least 10% of total amount.",
+    }),
   type: z.enum(["repayment", "interest"], { 
     required_error: "You need to select a notification type.",
 
   })
 })
 
-export function Calculator() {
+export function Calculator({ onCalculate }) {
   const [shouldShake, setShouldShake] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: 0,
-      term: 0,
-      rate: 0,
+      amount: "",
+      term: "",
+      rate: "",
+      initial: "",
       type: "repayment",
     },
   });
@@ -59,8 +64,20 @@ export function Calculator() {
   const { reset, handleSubmit } = form;
   
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast("Mortgage calculated successfully.");
+    const { amount, term, rate, type, initial } = values;
+    
+    const decimalRate = (rate / 100) / 12; // monthly decimal rate
+    const months = term * 12; // total months
+    const credit = amount - initial;
+
+    onCalculate({
+      type: type,
+      initial: initial,
+      monthly: calculateMonthly(credit, months, decimalRate),
+      total: calculateTotal(credit, months, decimalRate),
+      interestMonthly: calculateInterest(credit, months, decimalRate),
+      interestTotal: calculateInterestTotal(credit, months, decimalRate)
+    });
   }
 
   function onError() {
@@ -68,9 +85,24 @@ export function Calculator() {
     console.log("error");
   }
 
+  function calculateMonthly (a: number, m: number, r: number) {
+    return Math.round((a * ((r * ((1 + r) ** m)) / (((1 + r) ** m) - 1))));
+  }
+
+  function calculateTotal (a: number, m: number, r: number) {
+    return Math.round((calculateMonthly(a, m, r) * m));
+  }
+
+  function calculateInterest (a: number, m: number, r: number) {
+    return Math.round(((a * r * m) / (1-((1+r)** (-1* m)))));
+  }
+  
+  function calculateInterestTotal (a: number, m: number, r: number) {
+    return Math.round(((a * (1 + r) * m) - a));
+  }
+
   return (
     <>
-      
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
           <div className="flex items-center justify-between mb-5">
@@ -83,6 +115,19 @@ export function Calculator() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Amount</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="initial"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Initial</FormLabel>
                 <FormControl>
                   <Input type="number" placeholder="" {...field} />
                 </FormControl>
@@ -128,10 +173,10 @@ export function Calculator() {
                   <RadioGroup
                     onValueChange={field.onChange}
                     value={field.value}
-                    className="flex flex-col"
+                    className="flex items-start gap-sm"
                   >
                     
-                    <FormItem className={"flex items-center gap-3 p-3 pb-3.5 rounded-lg border " + (field.value == 'repayment' ? 'bg-neutral-800 border-neutral-600' : 'border-neutral-800 hover:bg-neutral-950')}>
+                    <FormItem className={"w-full flex items-center gap-3 p-3 pb-3.5 rounded-lg border " + (field.value == 'repayment' ? 'bg-neutral-800 border-neutral-600' : 'border-neutral-800 hover:bg-neutral-950')}>
                       <FormControl>
                         <RadioGroupItem value="repayment" />
                       </FormControl>
@@ -139,7 +184,7 @@ export function Calculator() {
                         Repayment
                       </FormLabel>
                     </FormItem>
-                    <FormItem className={"flex items-center gap-3 p-3 pb-3.5 rounded-lg border "  + (field.value == 'interest' ? 'bg-neutral-800 border-neutral-600' : 'border-neutral-800 hover:bg-neutral-950')}>
+                    <FormItem className={"w-full flex items-center gap-3 p-3 pb-3.5 rounded-lg border "  + (field.value == 'interest' ? 'bg-neutral-800 border-neutral-600' : 'border-neutral-800 hover:bg-neutral-950')}>
                       <FormControl>
                         <RadioGroupItem value="interest" />
                       </FormControl>
@@ -159,7 +204,7 @@ export function Calculator() {
             onAnimationComplete={() => setShouldShake(false)}
           >
             <Button key="SubmitButton" type="submit" className="w-full">
-              {"Calculate " + (form.watch("type") == "repayment" ? "repayments" : "interest")}
+              {"Calculate " + (form.watch("type") == "repayment" ? "repayments" : "interests")}
             </Button>
           </motion.div>
         </form>
